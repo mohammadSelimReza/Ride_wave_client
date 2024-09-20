@@ -1,215 +1,235 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-
+import Map from "../../../components/Map/Map";
+import tw from "tailwind-styled-components";
 
 const Ride = () => {
+  const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [selectPickUpLocation, setSelectPickUpLocation] = useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState("cash");
+  const [selectedCar, setSelectedCar] = useState(null);
+   // Function to get the user's current location using the Geolocation API
+   const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userCoords = [longitude, latitude];
+          setCurrentLocation(userCoords);
+          setSelectPickUpLocation(userCoords); // Set as the default pick-up location
+        },
+        (error) => {
+          console.error("Error retrieving user location: ", error);
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+    }
+  };
+
+  // Function to fetch coordinates from the Mapbox API
+  const getCoordinates = (location, setLocation) => {
+    fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${location}.json?` +
+        new URLSearchParams({
+          access_token: accessToken,
+          limit: 1,
+        })
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.features?.length > 0) {
+          setLocation(data.features[0].center); // Setting the coordinates
+        }
+      })
+      .catch((err) => console.error(err));
+  };
+
+  // Input handlers for pickup and destination locations
+  const handleInLocation = (event) => {
+    const location = event.target.value;
+    if(location){
+      getCoordinates(location, setSelectPickUpLocation); // Fetch and set pickup coordinates
+    }
+    else{
+      setSelectPickUpLocation(currentLocation);
+    }
+  };
+
+  const handleDesLocation = (event) => {
+    const location = event.target.value;
+    getCoordinates(location, setDestinationLocation); // Fetch and set destination coordinates
+  };
+
+  // Payment method handler
+  const handlePaymentChange = (event) => {
+    setSelectedPayment(event.target.value);
+  };
+
+  // Car selection handler
+  const handleCarSelection = (car) => {
+    setSelectedCar(car.target.value);
+  };
+  
   return (
     <div>
-      {/* Header Section */}
       <div className="mb-10 bg-orange-100 py-6">
         <div className="max-w-screen-lg mx-auto flex justify-between px-4 sm:px-6 lg:px-8">
-          <h3 className="text-xl font-bold">Let&apos;s Ride</h3>
+          <h3 className="text-xl font-bold">About US</h3>
           <div className="breadcrumbs text-sm">
             <ul>
               <li>
                 <NavLink to="/">Home</NavLink>
               </li>
-              <li>Ride With RideWave</li>
+              <li>Book A Ride</li>
             </ul>
           </div>
         </div>
       </div>
-
-      {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="ride-content flex flex-col md:flex-row max-w-screen-lg mx-auto">
-          {/* Ride Form */}
-          <div className="ride-form w-full md:w-1/2 p-6 bg-white shadow-lg rounded-lg mb-6 md:mb-0">
-            
-            <form>
-              {/* Pickup Input */}
-              <div className="form-group mb-6">
-                <label
-                  htmlFor="pickup"
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                >
-                  From
-                </label>
-                <input
-                  type="text"
-                  id="pickup"
-                  // value={pickupLocation}
-                  // onChange={(e) => handleLocationChange(e, "pickup")}
-                  placeholder="Select Pickup"
-                  className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Destination Input */}
-              <div className="form-group mb-6">
-                <label
-                  htmlFor="destination"
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                >
-                  Where to?
-                </label>
-                <input
-                  type="text"
-                  id="destination"
-                  // value={destinationLocation}
-                  // onChange={(e) => handleLocationChange(e, "destination")}
-                  placeholder="Select Destination"
-                  className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              {/* Payment Method */}
-              <div className="form-group mb-6">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Payment Method
-                </label>
-                <div className="flex flex-wrap items-center space-x-4">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="Cash"
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">Cash</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="Net Banking"
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">Net Banking</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="Debit Card"
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">Debit Card</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Car Selection */}
-              <div className="form-group mb-6">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Selected Car
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                  <label className="inline-flex flex-col items-center">
-                    <div className="flex gap-4">
-                      <input
-                        type="radio"
-                        name="scooter"
-                        value="Scooter"
-                        // onChange={() => setSelected?Car("Scooter")}
-                        className="form-radio h-4 w-4 text-indigo-600"
-                      />
-                      <span className="material-symbols-outlined text-blue-600 md:text-4xl">
-                        two_wheeler
-                      </span>
-                    </div>
-                    <span>
-                      1x <br /> Scooter
-                    </span>
-                  </label>
-                  <label className="inline-flex flex-col items-center">
-                    <div className="flex gap-4">
-                      <input
-                        type="radio"
-                        name="cng"
-                        value="mini_car"
-                        // onChange={() => setSelectedCar("Scooter")}
-                        className="form-radio h-4 w-4 text-indigo-600"
-                      />
-                      <span className="material-symbols-outlined md:text-4xl text-yellow-300">
-                        directions_car
-                      </span>
-                    </div>
-                    <span>
-                      2x <br /> Alto
-                    </span>
-                  </label>
-                  <label className="inline-flex flex-col items-center">
-                    <div className="flex gap-4">
-                      <input
-                        type="radio"
-                        name="car"
-                        value="private_car"
-                        // onChange={() => setSelectedCar("Scooter")}
-                        className="form-radio h-4 w-4 text-indigo-600"
-                      />
-                      <span className="material-symbols-outlined md:text-4xl text-green-300">
-                        directions_car
-                      </span>
-                    </div>
-                    <span>
-                      3x <br /> Swift Dzire
-                    </span>
-                  </label>
-                  <label className="inline-flex flex-col items-center">
-                    <div className="flex gap-4">
-                      <input
-                        type="radio"
-                        name="jeep"
-                        value="family_car"
-                        // onChange={() => setSelectedCar("Scooter")}
-                        className="form-radio h-4 w-4 text-indigo-600"
-                      />
-                      <span className="material-symbols-outlined md:text-4xl text-orange-300">
-                        directions_car
-                      </span>
-                    </div>
-                    <span>
-                      4x <br /> Luxury
-                    </span>
-                  </label>
-                  <label className="inline-flex flex-col items-center">
-                    <div className="flex gap-4">
-                      <input
-                        type="radio"
-                        name="micro"
-                        value="tour_car"
-                        // onChange={() => setSelectedCar("Scooter")}
-                        className="form-radio h-4 w-4 text-indigo-600"
-                      />
-                      <span className="material-symbols-outlined md:text-4xl text-yellow-300">
-                        directions_car
-                      </span>
-                    </div>
-                    <span>
-                      5x <br /> Tourist
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Book Now Button */}
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300"
-                // disabled={!pickupCoordinates || !destinationCoordinates}
-              >
-                BOOK NOW
-              </button>
-            </form>
+      <div className="flex md:max-w-screen-lg mx-auto my-10 gap-4">
+        <FormField>
+          {/* From and Destination Inputs */}
+          <div className="mb-4">
+            <label
+              htmlFor="pickup"
+              className="block text-gray-700 font-semibold mb-2"
+            >
+              From
+            </label>
+            <input
+              id="pickup"
+              type="text"
+              placeholder="Enter Pickup Location"
+              onChange={handleInLocation}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
           </div>
 
-          {/* Ride Map */}
-          <div className="ride-map w-full md:w-1/2 flex justify-center items-center mt-6 md:mt-0">
-            <h2>Map</h2>
+          <div className="mb-4">
+            <label
+              htmlFor="destination"
+              className="block text-gray-700 font-semibold mb-2"
+            >
+              Where to?
+            </label>
+            <input
+              id="destination"
+              type="text"
+              placeholder="Enter Destination Location"
+              onChange={handleDesLocation}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
           </div>
-        </div>
+
+          {/* Payment Method */}
+          <div className="mb-4">
+            <span className="block text-gray-700 font-semibold mb-2">
+              Payment Method
+            </span>
+            <div className="flex justify-between">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cash"
+                  checked={selectedPayment === "cash"}
+                  onChange={handlePaymentChange}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">Cash</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="net_banking"
+                  checked={selectedPayment === "net_banking"}
+                  onChange={handlePaymentChange}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">Net Banking</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="debit_card"
+                  checked={selectedPayment === "debit_card"}
+                  onChange={handlePaymentChange}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">Debit Card</span>
+              </label>
+            </div>
+          </div>
+          {/* Selected Car */}
+          <div className="mb-4">
+            <span className="block text-gray-700 font-semibold mb-2">
+              Selected Car
+            </span>
+            <div className="flex justify-between">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="bike"
+                  checked={selectedPayment === "bike"}
+                  onChange={handleCarSelection}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">Bike(1person)</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cng"
+                  checked={selectedPayment === "cng"}
+                  onChange={handleCarSelection}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">CNG(2person)</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="car"
+                  checked={selectedPayment === "car"}
+                  onChange={handleCarSelection}
+                  className="form-radio text-yellow-500"
+                />
+                <span className="ml-2">Car(3person)</span>
+              </label>
+            </div>
+          </div>
+          {/* Book Now Button */}
+          <div className="flex justify-center">
+            <button className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-700 transition duration-200">
+              Book Now
+            </button>
+          </div>
+        </FormField>
+
+        <Location>
+          <Map
+            pickUpCord={selectPickUpLocation}
+            dropOffCord={destinationLocation}
+          />
+        </Location>
       </div>
     </div>
   );
 };
+
+const Location = tw.div`
+w-1/2
+`;
+
+const FormField = tw.div`
+px-4 w-1/2 bg-white shadow-md rounded-md
+`;
 
 export default Ride;
