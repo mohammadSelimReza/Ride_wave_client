@@ -7,7 +7,7 @@ import Banner from "../Banner/Banner";
 import Blog from "../Blog/Blog";
 import Comment from "../Comment/Comment";
 import Features from "../Features/Features";
-import Map from "../Location/Map";
+import Location from "../Location/Location";
 import Trusted from "../Trusted/Trusted";
 
 const Home = () => {
@@ -22,7 +22,7 @@ const Home = () => {
       <Comment></Comment>
       <Blog></Blog>
       <Footer></Footer>
-      <Map></Map>
+      <Location></Location>
     </>
   );
 };

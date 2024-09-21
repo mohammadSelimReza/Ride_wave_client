@@ -12,7 +12,7 @@ const Map = ({ pickUpCord, dropOffCord }) => {
     const map = new mapboxgl.Map({
       container: mapContainer.current, // Reference to the div where the map will load
       style: "mapbox://styles/mapbox/streets-v11", // Mapbox style
-      center: [90.4125, 23.8041], // Coordinates for the center of the map (Dhaka, Bangladesh)
+      center: pickUpCord || [90.4125, 23.8103], // Coordinates for the center of the map (Dhaka, Bangladesh)
       zoom: 13, // Zoom level
     });
 
@@ -30,7 +30,7 @@ const Map = ({ pickUpCord, dropOffCord }) => {
         ],
     {
         padding:40,
-        zoom:13.5,
+        zoom:11,
     })
     }
 

@@ -2,23 +2,30 @@ import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import Map from "../../../components/Map/Map";
 import tw from "tailwind-styled-components";
-
+import mapboxgl from "mapbox-gl";
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 const Ride = () => {
   const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectPickUpLocation, setSelectPickUpLocation] = useState(null);
+  const [pickupAddress, setPickupAddress] = useState("");
   const [destinationLocation, setDestinationLocation] = useState(null);
+  const [destinationAddress, setDestinationAddress] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const [selectedCar, setSelectedCar] = useState(null);
-   // Function to get the user's current location using the Geolocation API
-   const getUserLocation = () => {
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]);
+  // Get user location
+  const getUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           const userCoords = [longitude, latitude];
           setCurrentLocation(userCoords);
-          setSelectPickUpLocation(userCoords); // Set as the default pick-up location
+          setSelectPickUpLocation(userCoords);
+          reverseGeocode(userCoords);
         },
         (error) => {
           console.error("Error retrieving user location: ", error);
@@ -28,11 +35,10 @@ const Ride = () => {
       console.error("Geolocation is not supported by this browser.");
     }
   };
-
-  // Function to fetch coordinates from the Mapbox API
-  const getCoordinates = (location, setLocation) => {
+  // Reverse geocoding for pickup address
+  const reverseGeocode = (coords) => {
     fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${location}.json?` +
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?` +
         new URLSearchParams({
           access_token: accessToken,
           limit: 1,
@@ -41,26 +47,82 @@ const Ride = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data?.features?.length > 0) {
-          setLocation(data.features[0].center); // Setting the coordinates
+          setPickupAddress(data.features[0].place_name);
         }
       })
       .catch((err) => console.error(err));
   };
 
-  // Input handlers for pickup and destination locations
-  const handleInLocation = (event) => {
-    const location = event.target.value;
-    if(location){
-      getCoordinates(location, setSelectPickUpLocation); // Fetch and set pickup coordinates
-    }
-    else{
-      setSelectPickUpLocation(currentLocation);
+  // Get location suggestions for pickup
+  const getPickupSuggestions = (input) => {
+    const [lng, lat] = currentLocation || [90.4125, 23.8103];
+
+    if (input.length > 0) {
+      fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${input}.json?` +
+          new URLSearchParams({
+            access_token: accessToken,
+            proximity: `${lng},${lat}`,
+            limit: 6,
+          })
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.features?.length > 0) {
+            setPickupSuggestions(data.features);
+          }
+        })
+        .catch((err) => console.error(err));
+    } else {
+      setPickupSuggestions([]);
     }
   };
 
-  const handleDesLocation = (event) => {
+  // Get location suggestions for destination
+  const getDestinationSuggestions = (input) => {
+    const [lng, lat] = currentLocation || [90.4125, 23.8103];
+
+    if (input.length > 0) {
+      fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${input}.json?` +
+          new URLSearchParams({
+            access_token: accessToken,
+            proximity: `${lng},${lat}`,
+            limit: 6,
+          })
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.features?.length > 0) {
+            setDestinationSuggestions(data.features);
+          }
+        })
+        .catch((err) => console.error(err));
+    } else {
+      setDestinationSuggestions([]);
+    }
+  };
+
+  // Input handlers for pickup and destination locations
+  // Pickup input handler
+  const handlePickupChange = (event) => {
     const location = event.target.value;
-    getCoordinates(location, setDestinationLocation); // Fetch and set destination coordinates
+    setPickupAddress(location);
+    if (location) {
+      getPickupSuggestions(location);
+    } else {
+      setSelectPickUpLocation(currentLocation);
+    }
+  };
+  // Destination input handler
+  const handleDestinationChange = (event) => {
+    const location = event.target.value;
+    setDestinationAddress(location);
+    if (location) {
+      getDestinationSuggestions(location);
+    } else {
+      setDestinationLocation(null);
+    }
   };
 
   // Payment method handler
@@ -69,10 +131,14 @@ const Ride = () => {
   };
 
   // Car selection handler
-  const handleCarSelection = (car) => {
-    setSelectedCar(car.target.value);
+  const handleCarSelection = () => {
+    setSelectedCar(selectedCar);
   };
-  
+
+  // Fetch user location on the first load
+  useEffect(() => {
+    getUserLocation();
+  }, []);
   return (
     <div>
       <div className="mb-10 bg-orange-100 py-6">
@@ -91,6 +157,7 @@ const Ride = () => {
       <div className="flex md:max-w-screen-lg mx-auto my-10 gap-4">
         <FormField>
           {/* From and Destination Inputs */}
+          {/* Pickup Input */}
           <div className="mb-4">
             <label
               htmlFor="pickup"
@@ -102,11 +169,30 @@ const Ride = () => {
               id="pickup"
               type="text"
               placeholder="Enter Pickup Location"
-              onChange={handleInLocation}
+              value={pickupAddress}
+              onChange={handlePickupChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
+            {pickupSuggestions.length > 0 && (
+              <ul className="absolute w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto">
+                {pickupSuggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setPickupAddress(suggestion.place_name);
+                      setSelectPickUpLocation(suggestion.center);
+                      setPickupSuggestions([]);
+                    }}
+                  >
+                    {suggestion.place_name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
+          {/* Destination Input */}
           <div className="mb-4">
             <label
               htmlFor="destination"
@@ -118,9 +204,27 @@ const Ride = () => {
               id="destination"
               type="text"
               placeholder="Enter Destination Location"
-              onChange={handleDesLocation}
+              value={destinationAddress}
+              onChange={handleDestinationChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
+            {destinationSuggestions.length > 0 && (
+              <ul className="absolute w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto">
+                {destinationSuggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setDestinationAddress(suggestion.place_name);
+                      setDestinationLocation(suggestion.center);
+                      setDestinationSuggestions([]);
+                    }}
+                  >
+                    {suggestion.place_name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Payment Method */}
