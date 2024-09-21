@@ -13,9 +13,10 @@ const Ride = () => {
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [destinationAddress, setDestinationAddress] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("cash");
-  const [selectedCar, setSelectedCar] = useState(null);
+  const [selectedCar, setSelectedCar] = useState("bike");
   const [pickupSuggestions, setPickupSuggestions] = useState([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
+  const [distance, setDistance] = useState(null); // For showing the distance
   // Get user location
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -131,14 +132,47 @@ const Ride = () => {
   };
 
   // Car selection handler
-  const handleCarSelection = () => {
-    setSelectedCar(selectedCar);
+  const handleCarSelection = (e) => {
+    setSelectedCar(e.target.value); // Update the selected car based on the clicked option
   };
+  // Haversine Formula to calculate distance between two points
+  const calculateDistance = (pickupCoords, destinationCoords) => {
+    const toRad = (value) => (value * Math.PI) / 180;
 
+    const R = 6371; // Radius of the Earth in km
+    const [lng1, lat1] = pickupCoords;
+    const [lng2, lat2] = destinationCoords;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in km
+  };
   // Fetch user location on the first load
+  useEffect(() => {
+    if (selectPickUpLocation && destinationLocation) {
+      const calculatedDistance = calculateDistance(
+        selectPickUpLocation,
+        destinationLocation
+      );
+      setDistance(calculatedDistance.toFixed(2)); // Limit to 2 decimal places
+    }
+  }, [selectPickUpLocation, destinationLocation]);
   useEffect(() => {
     getUserLocation();
   }, []);
+  const bikeFare = distance ? (distance * 13).toFixed(2) : 0;
+  const cngFare = distance ? (distance * 18).toFixed(2) : 0;
+  const carFare = distance ? (distance * 22).toFixed(2) : 0;
   return (
     <div>
       <div className="mb-10 bg-orange-100 py-6">
@@ -267,50 +301,115 @@ const Ride = () => {
                 <span className="ml-2">Debit Card</span>
               </label>
             </div>
+            {selectedPayment === "net_banking" && (
+              <div className="mt-4">
+                <label
+                  htmlFor="net-banking-account"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Net Banking Account Number
+                </label>
+                <input
+                  id="net-banking-account"
+                  type="text"
+                  placeholder="Enter Account Number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+            )}
+            {selectedPayment === "debit_card" && (
+              <div className="mt-4">
+                <label
+                  htmlFor="debit-card-number"
+                  className="block text-gray-700 font-semibold mb-2"
+                >
+                  Debit Card Number
+                </label>
+                <input
+                  id="debit-card-number"
+                  type="text"
+                  placeholder="Enter Card Number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+            )}
           </div>
           {/* Selected Car */}
-          <div className="mb-4">
-            <span className="block text-gray-700 font-semibold mb-2">
-              Selected Car
+          <div>
+            <span className="block text-gray-700 font-semibold mb-4">
+              Select Vehicle
             </span>
-            <div className="flex justify-between">
-              <label className="inline-flex items-center">
+            <div className="flex justify-between space-x-4">
+              {/* Bike Selection */}
+              <label className="inline-flex items-center flex-col bg-white shadow-md rounded-lg p-4 w-full text-center">
                 <input
                   type="radio"
-                  name="payment"
+                  name="vehicle"
                   value="bike"
-                  checked={selectedPayment === "bike"}
+                  checked={selectedCar === "bike"} // Compare with state value
                   onChange={handleCarSelection}
-                  className="form-radio text-yellow-500"
+                  className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="ml-2">Bike(1person)</span>
+                <span className="font-medium text-gray-800">Bike( 1 person) </span>
+                {selectedCar === "bike" &&
+                distance &&
+                pickupAddress &&
+                destinationLocation ? (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>Distance: {distance} km</p>
+                    <p>Fare: {bikeFare} Tk</p>
+                  </div>
+                ) : null}
               </label>
-              <label className="inline-flex items-center">
+
+              {/* CNG Selection */}
+              <label className="inline-flex items-center flex-col bg-white shadow-md rounded-lg p-4 w-full text-center">
                 <input
                   type="radio"
-                  name="payment"
+                  name="vehicle"
                   value="cng"
-                  checked={selectedPayment === "cng"}
+                  checked={selectedCar === "cng"} // Compare with state value
                   onChange={handleCarSelection}
-                  className="form-radio text-yellow-500"
+                  className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="ml-2">CNG(2person)</span>
+                <span className="font-medium text-gray-800">CNG (2 person) </span>
+                {selectedCar === "cng" &&
+                distance &&
+                pickupAddress &&
+                destinationLocation ? (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>Distance: {distance} km</p>
+                    <p>Fare: {cngFare} Tk</p>
+                  </div>
+                ) : null}
               </label>
-              <label className="inline-flex items-center">
+
+              {/* Car Selection */}
+              <label className="inline-flex items-center flex-col bg-white shadow-md rounded-lg p-4 w-full text-center">
                 <input
                   type="radio"
-                  name="payment"
+                  name="vehicle"
                   value="car"
-                  checked={selectedPayment === "car"}
+                  checked={selectedCar === "car"} // Compare with state value
                   onChange={handleCarSelection}
-                  className="form-radio text-yellow-500"
+                  className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="ml-2">Car(3person)</span>
+                <span className="font-medium text-gray-800">Car (3person) </span>
+                {selectedCar === "car" &&
+                distance &&
+                pickupAddress &&
+                destinationLocation ? (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>Distance: {distance} km</p>
+                    <p>Fare: {carFare} Tk</p>
+                  </div>
+                ) : null}
               </label>
             </div>
           </div>
+
           {/* Book Now Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center my-10">
             <button className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-700 transition duration-200">
               Book Now
             </button>
