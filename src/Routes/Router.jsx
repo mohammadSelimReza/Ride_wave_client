@@ -12,7 +12,8 @@ import Services from "../pages/Services/Services";
 import Pakages from "../pages/Pakages/Pakages";
 import Contact from "../pages/Contact/Contact";
 import MainLayout from "../Layout/MainLayout";
-
+import Drive from "../pages/Ride/Drive/Drive";
+import Ride from "../pages/Ride/Ride/Ride";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -45,13 +46,24 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "/ride-with-ridewave",
+        path: "/",
         element: <RideLayout></RideLayout>,
+        children: [
+          {
+            path: "/driver-status",
+            element: <Drive></Drive>,
+          },
+          {
+            path: "/ride-with-ridewave",
+            element: <Ride></Ride>
+          }
+        ],
       },
       {
         path: "/my-driver-dashboard",
         element: <DashboardLayout></DashboardLayout>,
       },
+      
       {
         path: "/user",
         element: <UserLayout></UserLayout>,
@@ -68,8 +80,8 @@ export const router = createBrowserRouter([
       },
       {
         path: "*",
-        element: <h1>No page available</h1>
-      }
+        element: <h1>No page available</h1>,
+      },
     ],
   },
 ]);

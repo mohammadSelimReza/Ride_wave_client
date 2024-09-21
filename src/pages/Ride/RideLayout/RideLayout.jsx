@@ -1,12 +1,12 @@
+import { Outlet } from "react-router-dom";
 import Footer from "../../Shared/Footer/Footer";
 import Header2 from "../../Shared/Header/Header2";
-import Ride from "../Ride/Ride";
 
 const RideLayout = () => {
     return (
         <div>
             <Header2></Header2>
-            <Ride></Ride>
+            <Outlet></Outlet>
             <Footer></Footer>
         </div>
     );

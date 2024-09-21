@@ -3,6 +3,8 @@ import { NavLink } from "react-router-dom";
 import Map from "../../../components/Map/Map";
 import tw from "tailwind-styled-components";
 import mapboxgl from "mapbox-gl";
+import Swal from "sweetalert2";
+
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 const Ride = () => {
   const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -173,6 +175,33 @@ const Ride = () => {
   const bikeFare = distance ? (distance * 13).toFixed(2) : 0;
   const cngFare = distance ? (distance * 18).toFixed(2) : 0;
   const carFare = distance ? (distance * 22).toFixed(2) : 0;
+
+  const handleBookNow = () => {
+    if (pickupAddress && destinationAddress && selectedPayment && selectedCar) {
+      Swal.fire({
+        title: "Confirm Booking",
+        text: `Are you sure you want to book a ride from ${pickupAddress} to ${destinationAddress}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, book it!",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire("Booked!", "Your ride has been booked.", "success");
+          // Handle the booking logic here
+        }
+      });
+    } else {
+      Swal.fire({
+        title: "Missing Information",
+        text: "Please fill out all required fields before booking.",
+        icon: "error",
+        confirmButtonText: "Okay",
+      });
+    }
+  };
+
   return (
     <div>
       <div className="mb-10 bg-orange-100 py-6">
@@ -350,7 +379,9 @@ const Ride = () => {
                   onChange={handleCarSelection}
                   className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="font-medium text-gray-800">Bike( 1 person) </span>
+                <span className="font-medium text-gray-800">
+                  Bike( 1 person){" "}
+                </span>
                 {selectedCar === "bike" &&
                 distance &&
                 pickupAddress &&
@@ -372,7 +403,9 @@ const Ride = () => {
                   onChange={handleCarSelection}
                   className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="font-medium text-gray-800">CNG (2 person) </span>
+                <span className="font-medium text-gray-800">
+                  CNG (2 person){" "}
+                </span>
                 {selectedCar === "cng" &&
                 distance &&
                 pickupAddress &&
@@ -394,7 +427,9 @@ const Ride = () => {
                   onChange={handleCarSelection}
                   className="form-radio text-yellow-500 mb-2"
                 />
-                <span className="font-medium text-gray-800">Car (3person) </span>
+                <span className="font-medium text-gray-800">
+                  Car (3person){" "}
+                </span>
                 {selectedCar === "car" &&
                 distance &&
                 pickupAddress &&
@@ -410,7 +445,23 @@ const Ride = () => {
 
           {/* Book Now Button */}
           <div className="flex justify-center my-10">
-            <button className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-700 transition duration-200">
+            <button
+              onClick={handleBookNow}
+              className={`px-6 py-2 font-semibold rounded-full transition duration-200 ${
+                pickupAddress &&
+                destinationAddress &&
+                selectedPayment &&
+                selectedCar
+                  ? "bg-black text-white hover:bg-gray-700"
+                  : "bg-gray-400 text-gray-200 cursor-not-allowed"
+              }`}
+              disabled={
+                !pickupAddress ||
+                !destinationAddress ||
+                !selectedPayment ||
+                !selectedCar
+              }
+            >
               Book Now
             </button>
           </div>

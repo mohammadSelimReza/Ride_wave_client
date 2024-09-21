@@ -50,7 +50,7 @@ const Header = () => {
           </NavLink>
 
           <NavLink
-            to="/drive-with-us"
+            to="/driver-status"
             className={({ isActive }) =>
               isActive
                 ? "text-yellow-500 font-bold"
@@ -110,7 +110,7 @@ const Header = () => {
                   <NavLink to="/dashboard">Driver Dashboard</NavLink>
                 </li>
                 <li>
-                  <NavLink to="/drive-with-us">Drive With Us</NavLink>
+                  <NavLink to="/driver-status">Drive With Us</NavLink>
                 </li>
                 <li>
                   <NavLink to="/book-ride">Book a Ride</NavLink>
