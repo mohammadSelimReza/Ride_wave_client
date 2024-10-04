@@ -1,13 +1,18 @@
 import { NavLink } from "react-router-dom";
+import useAuth from "../../../context/useAuth";
 
 const Header = () => {
+  const { driverData ,user,isAuth } = useAuth();
+  console.log(driverData);
   return (
     <div className="max-w-screen-2xl mx-auto">
       <div className="navbar bg-base-100 flex">
         {/* Logo Section */}
         <div className="navbar-start w-1/5">
           <NavLink className="flex items-center space-x-2">
-            <span className="material-symbols-outlined text-4xl md:text-6xl text-primary">search_hands_free</span>
+            <span className="material-symbols-outlined text-4xl md:text-6xl text-primary">
+              search_hands_free
+            </span>
             <div className="flex flex-col">
               <p className="font-extrabold text-2xl md:text-4xl">
                 <span className="text-yellow-500">Ride</span>Wave
@@ -24,7 +29,9 @@ const Header = () => {
           {/* Location Input */}
           <div className="join border border-black hover:border-yellow-500 rounded-full flex">
             <span className="join-item px-4">
-              <span className="material-symbols-outlined text-black">location_on</span>
+              <span className="material-symbols-outlined text-black">
+                location_on
+              </span>
             </span>
             <input
               className="input join-item rounded-l-full border-none focus:outline-none"
@@ -50,7 +57,7 @@ const Header = () => {
           </NavLink>
 
           <NavLink
-            to="/driver-status"
+            to={driverData ? "/driver-status" : "/user/driver-login"}
             className={({ isActive }) =>
               isActive
                 ? "text-yellow-500 font-bold"
@@ -121,15 +128,26 @@ const Header = () => {
         </div>
       </div>
       <div className="header-2 bg-gray-700 text-white hidden md:flex justify-center items-center gap-x-10">
-        <NavLink to='/'>Home</NavLink>
-        <NavLink to='/about'>About</NavLink>
-        <NavLink to='/services'>Our Services</NavLink>
-        <NavLink to='/vehicles'>Our Vehicles</NavLink>
-        <NavLink to='/pakages'>Packages</NavLink>
-        <NavLink to='/blog'>Blog</NavLink>
-        <NavLink to='/contact'>Contact</NavLink>
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/about">About</NavLink>
+        <NavLink to="/services">Our Services</NavLink>
+        <NavLink to="/vehicles">Our Vehicles</NavLink>
+        <NavLink to="/pakages">Packages</NavLink>
+        <NavLink to="/blog">Blog</NavLink>
+        <NavLink to="/contact">Contact</NavLink>
         <NavLink>
-          <button className="btn">Get Started</button>
+          {
+            isAuth ? 
+            (
+              <NavLink to='/user/profile'>
+                <button className="btn"> {user?.first_name} {user?.last_name} </button>
+              </NavLink>
+            )
+            :
+            (
+              <button className="btn"> Get Started </button>
+            )
+          }
         </NavLink>
       </div>
     </div>

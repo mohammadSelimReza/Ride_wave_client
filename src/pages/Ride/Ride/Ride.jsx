@@ -1,62 +1,38 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import Map from "../../../components/Map/Map";
 import tw from "tailwind-styled-components";
 import mapboxgl from "mapbox-gl";
 import Swal from "sweetalert2";
+import useAuth from "../../../context/useAuth";
+import api from "../../../api";
+import useMap from "../../../context/useMap";
+import LiveSearchDriverComponent from "./LiveSearchDriverComponent";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 const Ride = () => {
-  const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+  const { user } = useAuth();
 
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [selectPickUpLocation, setSelectPickUpLocation] = useState(null);
-  const [pickupAddress, setPickupAddress] = useState("");
-  const [destinationLocation, setDestinationLocation] = useState(null);
-  const [destinationAddress, setDestinationAddress] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const [selectedCar, setSelectedCar] = useState("bike");
+  const [distance, setDistance] = useState(null);
+  const [fare, setFare] = useState(0);
+  const navigate = useNavigate();
   const [pickupSuggestions, setPickupSuggestions] = useState([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
-  const [distance, setDistance] = useState(null); // For showing the distance
-  // Get user location
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const userCoords = [longitude, latitude];
-          setCurrentLocation(userCoords);
-          setSelectPickUpLocation(userCoords);
-          reverseGeocode(userCoords);
-        },
-        (error) => {
-          console.error("Error retrieving user location: ", error);
-        }
-      );
-    } else {
-      console.error("Geolocation is not supported by this browser.");
-    }
-  };
-  // Reverse geocoding for pickup address
-  const reverseGeocode = (coords) => {
-    fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?` +
-        new URLSearchParams({
-          access_token: accessToken,
-          limit: 1,
-        })
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.features?.length > 0) {
-          setPickupAddress(data.features[0].place_name);
-        }
-      })
-      .catch((err) => console.error(err));
-  };
+  const [destinationLocation, setDestinationLocation] = useState(null);
+  const [destinationAddress, setDestinationAddress] = useState("");
+  const [searchDriver, setSearchDriver] = useState(false);
+  const {
+    currentLocation,
+    selectPickUpLocation,
+    pickupAddress,
+    getUserLocation,
+    setPickupAddress,
+    accessToken,
+    setSelectPickUpLocation,
+  } = useMap();
 
-  // Get location suggestions for pickup
   const getPickupSuggestions = (input) => {
     const [lng, lat] = currentLocation || [90.4125, 23.8103];
 
@@ -80,8 +56,6 @@ const Ride = () => {
       setPickupSuggestions([]);
     }
   };
-
-  // Get location suggestions for destination
   const getDestinationSuggestions = (input) => {
     const [lng, lat] = currentLocation || [90.4125, 23.8103];
 
@@ -105,9 +79,6 @@ const Ride = () => {
       setDestinationSuggestions([]);
     }
   };
-
-  // Input handlers for pickup and destination locations
-  // Pickup input handler
   const handlePickupChange = (event) => {
     const location = event.target.value;
     setPickupAddress(location);
@@ -117,7 +88,6 @@ const Ride = () => {
       setSelectPickUpLocation(currentLocation);
     }
   };
-  // Destination input handler
   const handleDestinationChange = (event) => {
     const location = event.target.value;
     setDestinationAddress(location);
@@ -172,11 +142,22 @@ const Ride = () => {
   useEffect(() => {
     getUserLocation();
   }, []);
-  const bikeFare = distance ? (distance * 13).toFixed(2) : 0;
-  const cngFare = distance ? (distance * 18).toFixed(2) : 0;
-  const carFare = distance ? (distance * 22).toFixed(2) : 0;
 
-  const handleBookNow = () => {
+  useEffect(() => {
+    let calculatedFare = 0;
+    if (distance) {
+      if (selectedCar === "bike") {
+        calculatedFare = distance * 13;
+      } else if (selectedCar === "cng") {
+        calculatedFare = distance * 18;
+      } else if (selectedCar === "car") {
+        calculatedFare = distance * 22;
+      }
+    }
+    setFare(calculatedFare.toFixed(2)); // Set fare to 2 decimal places
+  }, [distance, selectedCar]);
+
+  const handleBookNow = async () => {
     if (pickupAddress && destinationAddress && selectedPayment && selectedCar) {
       Swal.fire({
         title: "Confirm Booking",
@@ -186,10 +167,44 @@ const Ride = () => {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Yes, book it!",
-      }).then((result) => {
+      }).then(async (result) => {
         if (result.isConfirmed) {
-          Swal.fire("Booked!", "Your ride has been booked.", "success");
-          // Handle the booking logic here
+          const requestData = {
+            start_location: pickupAddress,
+            destination_location: destinationAddress,
+            payment_method: selectedPayment,
+            travel_vehicle: selectedCar,
+            path_distance: distance,
+            travel_fare: fare,
+            driver_booked: false,
+            rider: user?.id,
+          };
+
+          console.log(JSON.stringify(requestData));
+
+          try {
+            await api.post("/travel/request/list/", requestData);
+            Swal.fire("Booked!", "Your ride has been booked.", "success").then(
+              (result) => {
+                if (result.isConfirmed) {
+                  setSearchDriver(true);
+                  // Redirect to the searching for driver page
+                  navigate("/searching-for-driver", {
+                    state: {
+                      currentLocation,
+                    },
+                  });
+                }
+              }
+            );
+          } catch (error) {
+            console.error("Error booking ride:", error);
+            Swal.fire(
+              "Error",
+              "Failed to book the ride. Please try again later.",
+              "error"
+            );
+          }
         }
       });
     } else {
@@ -200,6 +215,7 @@ const Ride = () => {
         confirmButtonText: "Okay",
       });
     }
+    console.log("mew");
   };
 
   return (
@@ -388,7 +404,7 @@ const Ride = () => {
                 destinationLocation ? (
                   <div className="mt-2 text-sm text-gray-600">
                     <p>Distance: {distance} km</p>
-                    <p>Fare: {bikeFare} Tk</p>
+                    <p>Fare: {fare} Tk</p>
                   </div>
                 ) : null}
               </label>
@@ -412,7 +428,7 @@ const Ride = () => {
                 destinationLocation ? (
                   <div className="mt-2 text-sm text-gray-600">
                     <p>Distance: {distance} km</p>
-                    <p>Fare: {cngFare} Tk</p>
+                    <p>Fare: {fare} Tk</p>
                   </div>
                 ) : null}
               </label>
@@ -436,7 +452,7 @@ const Ride = () => {
                 destinationLocation ? (
                   <div className="mt-2 text-sm text-gray-600">
                     <p>Distance: {distance} km</p>
-                    <p>Fare: {carFare} Tk</p>
+                    <p>Fare: {fare} Tk</p>
                   </div>
                 ) : null}
               </label>
@@ -474,6 +490,18 @@ const Ride = () => {
           />
         </Location>
       </div>
+      {/* Conditionally render the driver search component */}
+      {searchDriver && (
+        <LiveSearchDriverComponent
+          from={pickupAddress}
+          to={destinationAddress}
+          payment_method={selectedPayment}
+          vehicle={selectedCar}
+          fare={fare}
+          distance={distance}
+          setSearchDriver={setSearchDriver}
+        />
+      )}
     </div>
   );
 };

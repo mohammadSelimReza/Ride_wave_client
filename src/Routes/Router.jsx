@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import Main from "../Layout/Main";
 import Home from "../pages/Home/Home/Home";
 import RideLayout from "../pages/Ride/RideLayout/RideLayout";
@@ -14,6 +14,19 @@ import Contact from "../pages/Contact/Contact";
 import MainLayout from "../Layout/MainLayout";
 import Drive from "../pages/Ride/Drive/Drive";
 import Ride from "../pages/Ride/Ride/Ride";
+import ProtectedRoute from "./ProtectedRoute";
+import ReqLogin from "../pages/Shared/User/Login/ReqLogin";
+import LiveSearchDriverComponent from "../pages/Ride/Ride/LiveSearchDriverComponent";
+import RidingTime from "../pages/Ride/Ride/RidingTime";
+import CompleteRide from "../pages/Ride/Ride/CompleteRide";
+import ProfileLayout from "../pages/Shared/User/Profile/ProfileLayout/ProfileLayout";
+import ProfileMain from "../pages/Shared/User/Profile/ProfileMain/ProfileMain";
+import PasswordChange from "../pages/Shared/User/Profile/PasswordChange/PasswordChange";
+import UpdateBioInfo from "../pages/Shared/User/Profile/UpdateBioInfo/UpdateBioInfo";
+import UserNameChange from "../pages/Shared/User/Profile/UserNameChange/UserNameChange";
+import RiderHistory from "../pages/Shared/User/Profile/RiderHistory/RiderHistory";  
+
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -51,19 +64,55 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/driver-status",
-            element: <Drive></Drive>,
+            element: (
+              <ProtectedRoute>
+                <Drive />
+              </ProtectedRoute>
+            ),
           },
           {
             path: "/ride-with-ridewave",
-            element: <Ride></Ride>
-          }
+            element: (
+              <ProtectedRoute>
+                <Ride />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "/searching-for-driver",
+            element: (
+              <ProtectedRoute>
+                <LiveSearchDriverComponent />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "/ride-status",
+            element: (
+              <ProtectedRoute>
+                <RidingTime />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "/after_ride",
+            element: (
+              <ProtectedRoute>
+                <CompleteRide />
+              </ProtectedRoute>
+            ),
+          },
         ],
       },
       {
         path: "/my-driver-dashboard",
-        element: <DashboardLayout></DashboardLayout>,
+        element: (
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
       },
-      
+
       {
         path: "/user",
         element: <UserLayout></UserLayout>,
@@ -73,8 +122,64 @@ export const router = createBrowserRouter([
             element: <Login></Login>,
           },
           {
+            path: "/user/driver-login",
+            element: <ReqLogin></ReqLogin>,
+          },
+          {
             path: "/user/registration",
             element: <SignUp></SignUp>,
+          },
+          {
+            path: "/user/profile",
+            element: (
+              <ProtectedRoute>
+                <ProfileLayout />
+              </ProtectedRoute>
+            ),
+            children:[
+              {
+                path: "/user/profile/",
+                element: (
+                  <ProtectedRoute>
+                    <ProfileMain />
+                  </ProtectedRoute>
+                ), 
+              },
+              {
+                path: "/user/profile/change-password",
+                element: (
+                  <ProtectedRoute>
+                    <PasswordChange />
+                  </ProtectedRoute>
+                ), 
+              },
+              {
+                path: "/user/profile/update-bio",
+                element: (
+                  <ProtectedRoute>
+                    <UpdateBioInfo />
+                  </ProtectedRoute>
+                )
+              },
+              {
+                path: "/user/profile/update-name",
+                element: (
+                  <ProtectedRoute>
+                    {/* Add Update Name Component */}
+                    <UserNameChange />
+                  </ProtectedRoute>
+                )
+              },
+              {
+                path: "/user/profile/ride-history",
+                element: (
+                  <ProtectedRoute>
+                    {/* Add Ride History Component */}
+                    <RiderHistory />
+                  </ProtectedRoute>
+                )
+              }
+            ]
           },
         ],
       },
