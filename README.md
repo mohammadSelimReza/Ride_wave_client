@@ -4,4 +4,3 @@
 4. driver can accept request
 5. if driver start the ride the ride will start
 6. if the driver stop  the ride will be finish
-7. 
